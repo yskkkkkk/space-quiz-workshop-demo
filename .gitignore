@@ -1,0 +1,9 @@
+/target/
+.idea/
+
+# Publish only the workshop files.
+/*
+!/.gitignore
+!/index.html
+!/README.md
+!/AGENTS.md
