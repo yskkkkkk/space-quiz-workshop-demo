@@ -9,6 +9,7 @@ connection, or external dependencies are required.
 - Ten questions, progress tracking, scoring, and answer explanations.
 - Green correct-answer feedback and red shaking incorrect-answer feedback.
 - Results with a score count-up, large emoji reactions, and restart.
+- Read-only review of this run's incorrect answers, correct answers, and explanations.
 - Keyboard navigation with Tab, Enter, and Space; screen reader announcements.
 - Automatic light/dark themes and reduced-motion support.
 

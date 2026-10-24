@@ -113,6 +113,16 @@
     .result-score span { font-size: 20px; letter-spacing: 0; color: var(--muted); }
     .result-stats { display: flex; justify-content: center; gap: 30px; margin: 26px 0; padding: 20px 0; border-block: 1px solid var(--line); font-size: 13px; }
     .result-stats strong { display: block; font-size: 22px; }
+    .review { text-align: left; margin: 26px 0; }
+    .review h3 { font-size: 18px; margin: 0 0 14px; }
+    .review-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+    .review-item { border: 1px solid var(--line); border-radius: 11px; padding: 16px; overflow-wrap: anywhere; }
+    .review-item h4 { font-size: 15px; margin: 0 0 12px; }
+    .review-item dl { margin: 0; font-size: 13px; }
+    .review-item dt { font-weight: 750; margin-top: 10px; }
+    .review-item dd { margin: 3px 0 0; }
+    .review-selected { color: var(--red); }
+    .review-correct { color: var(--green); }
     .result .primary { margin-top: 12px; min-width: 180px; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
     @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
@@ -229,6 +239,11 @@
                 <div>오답<strong id="wrong-count"></strong></div>
                 <div>정답률<strong id="accuracy"></strong></div>
               </div>
+              <section class="review" aria-labelledby="review-title">
+                <h3 id="review-title">오답 복습</h3>
+                <p id="review-empty" hidden>틀린 문항이 없어요. 모든 질문을 맞혔어요!</p>
+                <ol id="review-list" class="review-list" role="list"></ol>
+              </section>
               <button class="primary" id="restart" type="button">다시 탐사하기 <span aria-hidden="true">↗</span></button>
             </div>
           </section>
@@ -259,6 +274,7 @@
     let score = 0;
     let answered = false;
     let scoreAnimation;
+    const wrongAnswers = [];
 
     function renderQuestion(moveFocus = false) {
       answered = false;
@@ -294,6 +310,15 @@
       answered = true;
       const item = questions[current];
       const correct = index === item.correct;
+      if (!correct) {
+        wrongAnswers.push({
+          number: current + 1,
+          question: item.question,
+          selectedAnswer: item.answers[index],
+          correctAnswer: item.answers[item.correct],
+          explanation: item.explanation
+        });
+      }
       if (correct) score += 10;
       get("score").textContent = score;
       get("progress").value = current + 1;
@@ -318,6 +343,34 @@
       feedback.hidden = false;
       get("announcement").textContent = `${heading} 정답은 ${item.answers[item.correct]}. ${item.explanation} 현재 점수 ${score}점. ${current === 9 ? "결과 보기" : "다음 질문"} 버튼을 눌러 주세요.`;
       get("next").disabled = false;
+    }
+
+    function renderReview() {
+      const list = get("review-list");
+      list.replaceChildren();
+      list.hidden = wrongAnswers.length === 0;
+      get("review-empty").hidden = wrongAnswers.length !== 0;
+      wrongAnswers.forEach((answer) => {
+        const entry = document.createElement("li");
+        entry.className = "review-item";
+        const heading = document.createElement("h4");
+        heading.textContent = `문항 ${answer.number}. ${answer.question}`;
+        const details = document.createElement("dl");
+        [
+          ["선택한 답", answer.selectedAnswer, "review-selected"],
+          ["정답", answer.correctAnswer, "review-correct"],
+          ["해설", answer.explanation, ""]
+        ].forEach(([label, text, className]) => {
+          const term = document.createElement("dt");
+          term.textContent = label;
+          const description = document.createElement("dd");
+          description.textContent = text;
+          description.className = className;
+          details.append(term, description);
+        });
+        entry.append(heading, details);
+        list.append(entry);
+      });
     }
 
     function showResults() {
@@ -351,6 +404,7 @@
       get("correct-count").textContent = `${score / 10}개`;
       get("wrong-count").textContent = `${10 - score / 10}개`;
       get("accuracy").textContent = `${score}%`;
+      renderReview();
       get("announcement").textContent = `탐사 완료! 100점 만점에 ${score}점. 정답 ${score / 10}개, 오답 ${10 - score / 10}개. ${reaction.title}`;
       get("result-title").focus();
     }
@@ -365,6 +419,9 @@
     });
     get("restart").addEventListener("click", () => {
       cancelAnimationFrame(scoreAnimation);
+      wrongAnswers.length = 0;
+      get("review-list").replaceChildren();
+      get("review-empty").hidden = true;
       current = 0;
       score = 0;
       get("score").textContent = "0";
